@@ -1,0 +1,5 @@
+[workspace]
+
+members = [
+    "src/actix_backend/",
+]
