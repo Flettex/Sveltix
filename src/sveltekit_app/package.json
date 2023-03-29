@@ -32,8 +32,5 @@
 		"vite": "^4.2.0",
 		"vitest": "^0.25.3"
 	},
-	"type": "module",
-	"dependencies": {
-		"flamethrower-router": "0.0.0-meme.12"
-	}
+	"type": "module"
 }

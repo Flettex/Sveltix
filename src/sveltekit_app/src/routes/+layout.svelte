@@ -2,13 +2,6 @@
 	import Header from './Header.svelte';
 	import './styles.css';
 	import {onMount} from 'svelte';
-	import flamethrower from 'flamethrower-router';
-
-	let router;
-	
-	onMount(() => {
-		router = flamethrower({ prefetch: 'hover', log: true });
-	})
 </script>
 
 <div class="app">

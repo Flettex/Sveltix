@@ -1,5 +1,4 @@
 cd ../sveltekit_app
-pnpm i
 pnpm build
 cd ../actix_backend
 
