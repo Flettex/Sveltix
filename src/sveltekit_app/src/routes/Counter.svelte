@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { spring } from 'svelte/motion';
-	import { count } from '$lib/test';
+	import { count } from '$lib/stores';
 
 	const displayed_count = spring();
 	$: displayed_count.set($count);
