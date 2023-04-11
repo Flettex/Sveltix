@@ -1,4 +1,4 @@
-import {writable} from 'svelte/store';
+import { writable } from "svelte/store";
 
 
-export const count = writable<number>(0);
+export const counter = writable<number>(0);
