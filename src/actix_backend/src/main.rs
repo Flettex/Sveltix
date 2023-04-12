@@ -72,9 +72,10 @@ async fn main() -> std::io::Result<()> {
         )
     };
 
-    let pool = sqlx::PgPool::connect(&env::var("DATABASE_URL").expect("DATABASE_URL env var not set"))
-        .await
-        .expect("Failed to create postgres pool");
+    let pool =
+        sqlx::PgPool::connect(&env::var("DATABASE_URL").expect("DATABASE_URL env var not set"))
+            .await
+            .expect("Failed to create postgres pool");
 
     let enable_template_autoreload = env::var("TEMPLATE_AUTORELOAD").as_deref() == Ok("true");
 

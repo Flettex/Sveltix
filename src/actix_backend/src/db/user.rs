@@ -22,7 +22,6 @@ pub struct User {
 
 pub async fn create_user(
     username: String,
-    email: String,
     password: String,
     is_staff: bool,
     is_superuser: bool,
