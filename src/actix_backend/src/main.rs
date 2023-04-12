@@ -10,6 +10,7 @@ use actix_files::Files;
 use minijinja_autoreload::AutoReloader;
 // use serde_json::json;
 
+pub mod db;
 pub mod server_props;
 
 struct MiniJinjaRenderer {
@@ -71,9 +72,10 @@ async fn main() -> std::io::Result<()> {
         )
     };
 
-    // let pool = PgPool::connect(&env::var("DATABASE_URL").expect("DATABASE_URL env var not set"))
-    //     .await
-    //     .expect("Failed to create postgres pool");
+    let pool = sqlx::PgPool::connect(&env::var("DATABASE_URL").expect("DATABASE_URL env var not set"))
+        .await
+        .expect("Failed to create postgres pool");
+
     let enable_template_autoreload = env::var("TEMPLATE_AUTORELOAD").as_deref() == Ok("true");
 
     let tmpl_reloader = AutoReloader::new(move |notifier| {
@@ -115,6 +117,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             // .app_data(web::Data::new(pool.clone()))
             .app_data(tmpl_reloader.clone())
+            .app_data(web::Data::new(pool.clone()))
             .wrap(middleware::Logger::default())
             .service(web::resource("/").route(web::get().to(index)))
             // Put this after the index route or it won't work
