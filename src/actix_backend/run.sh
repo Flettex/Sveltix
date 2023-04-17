@@ -1,5 +1,5 @@
 cd ../sveltekit_app
-pnpm build
+node buildScript.js
 cd ../actix_backend
 
 export $(cat .env | xargs)

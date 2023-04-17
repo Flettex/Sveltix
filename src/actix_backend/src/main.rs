@@ -1,51 +1,18 @@
 use std::{collections::HashMap, env};
 
-use actix_utils::future::{ready, Ready};
 use actix_web::{
-    cookie::Key, dev, error, middleware, web, App, FromRequest, HttpRequest, HttpServer, Responder,
+    cookie::Key, middleware, web, App, HttpServer, Responder,
 };
-use actix_web_lab::respond::Html;
-
 use actix_files::Files;
+use actix_web::dev::{ServiceRequest, ServiceResponse, fn_service};
 use minijinja_autoreload::AutoReloader;
 // use serde_json::json;
 
 pub mod db;
 pub mod server_props;
+pub mod template_engine;
 
-struct MiniJinjaRenderer {
-    tmpl_env: web::Data<minijinja_autoreload::AutoReloader>,
-}
-
-impl MiniJinjaRenderer {
-    fn render(
-        &self,
-        tmpl: &str,
-        ctx: impl Into<minijinja::value::Value>,
-    ) -> actix_web::Result<Html> {
-        self.tmpl_env
-            .acquire_env()
-            .map_err(|_| error::ErrorInternalServerError("could not acquire template env"))?
-            .get_template(tmpl)
-            .map_err(|_| error::ErrorInternalServerError("could not find template"))?
-            .render(ctx.into())
-            .map(Html)
-            .map_err(|_err| error::ErrorInternalServerError("template error"))
-    }
-}
-
-impl FromRequest for MiniJinjaRenderer {
-    type Error = actix_web::Error;
-    type Future = Ready<Result<Self, Self::Error>>;
-
-    fn from_request(req: &HttpRequest, _pl: &mut dev::Payload) -> Self::Future {
-        let tmpl_env = <web::Data<minijinja_autoreload::AutoReloader>>::extract(req)
-            .into_inner()
-            .unwrap();
-
-        ready(Ok(Self { tmpl_env }))
-    }
-}
+use template_engine::MiniJinjaRenderer;
 
 async fn index(tmpl_env: MiniJinjaRenderer) -> actix_web::Result<impl Responder> {
     return tmpl_env.render(
@@ -60,6 +27,8 @@ const IS_DEBUG: bool = option_env!("PROD").is_none();
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
     let dev_server_addr = match option_env!("SERVER_ADDRESS") {
         Some(addr) => &(addr as &str),
         None => "127.0.0.1",
@@ -91,7 +60,7 @@ async fn main() -> std::io::Result<()> {
         }
 
         env.set_source(minijinja::Source::from_path(tmpl_path));
-
+    
         Ok(env)
     });
 
@@ -115,8 +84,9 @@ async fn main() -> std::io::Result<()> {
         let source_directory = std::env::current_dir().unwrap();
         let source_directory = source_directory.parent().unwrap();
 
+
         App::new()
-            // .app_data(web::Data::new(pool.clone()))
+            .app_data(web::Data::new(pool.clone()))
             .app_data(tmpl_reloader.clone())
             .app_data(web::Data::new(pool.clone()))
             .wrap(middleware::Logger::default())
@@ -124,9 +94,19 @@ async fn main() -> std::io::Result<()> {
             // Put this after the index route or it won't work
             // We need actix-files to serve the static JS, CSS and image files
             .service(Files::new(
+                "/flutter/",
+                source_directory.join("flutter_app/build/web"),
+            ).index_file(source_directory.join("flutter_app/build/web/index.html").to_str().unwrap()))
+            .service(Files::new(
                 "/",
                 source_directory.join("sveltekit_app/build"),
-            ))
+            ).default_handler(web::route().to(|req: actix_web::HttpRequest, tmpl_env: MiniJinjaRenderer| async move {
+                let filename = req.uri().path();
+                let filename = &filename[1..filename.len()];
+                println!("file name is: {}", filename);
+                tmpl_env.render(format!("{}.html", filename).as_str(), minijinja::context! {})          
+            }))
+        )
     })
     .workers(2)
     .bind((if IS_DEBUG { dev_server_addr } else { "0.0.0.0" }, 8080))?

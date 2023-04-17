@@ -1,7 +1,14 @@
 <script lang="ts">
     import type { PageData } from "./$types";
     import {counter} from "$lib/stores";
+
     export let data: PageData;
+
+    $: console.log(data)
+
+    setTimeout(() => {
+        data.data = "edited haha"
+    }, 2000);
 </script>
 
 <h1>Message from server: {data.data}</h1>
